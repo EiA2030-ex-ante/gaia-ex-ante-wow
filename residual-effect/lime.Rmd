@@ -1,0 +1,122 @@
+---
+title: "Lime effect decay time"
+date: "Compiled on `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+    code_folding: hide
+editor_options:
+  chunk_output_type: console
+---
+
+## Introduction
+
+Figure 14 in Salinas and Sanchez (1981; after Gualdrón and Spain, 1980; Suelos Ecuat. 10: 131-146) shows that, after liming, the increase of Exch-Al over time is roughly similar across lime treatments, until the original (control) level of Exch-Al is reached.
+
+The soil that received the 2 ton lime application would have the same amount of Exch-Al as the control after 6 or 7 years, which is in line with what was reported elsewhere. 
+
+They show an increase in Al-Exch (the slope) of ~0.22 meq/(100g year). This suggest that, for this soil, the yearly amount of maintenance lime would be the amount required to offset 0.22 meq/100g. So if you would lime again after three years it would be three times that amount, or the initial amount, whichever is lower.
+
+## Implementation 
+
+To model this I implemented a simple (not exported) function in version 0.1.4 of the limer package: `limer:::.lime_time`. Lime rates are computed with the "limer" method developed by Aramburu-Merlos et al.
+
+Below I use that function to see how this soil goes back from TAS to initial conditions over time. I am using the decay rate of 0.22, and no additional acidification from e.g. fertilizer. 
+
+I set the ECEC to 5 and use a TAS of 20. 
+
+```{r, fig.width=5}
+x <- limer:::.lime_time(years=15, exch_ac=3.5, ECEC=5, TAS=20, acidification=0, decay=0.22)
+plot(x, main=names(x)[2], ylab="Exch_Al", xlab="Years after liming", las=1, type="b")
+```
+
+The initial and maintenance amount of lime to stay at TAS are:
+
+```{r}
+limer:::.lime_time(exch_ac=3.5, ECEC=5, TAS=20, rates=TRUE)
+```
+
+We can compare levels of TAS for this soil. Here for TAS is 10, 20, 30 or 40, for exchangeable acidity = 3.5 and ECEC=7.
+
+```{r, fig.width=5}
+tas <- c(40, 30, 20, 10)
+n <- length(tas)
+y <- limer:::.lime_time(exch_ac=3.5, ECEC=7, TAS=tas)
+plot(y[,1:2], ylab="Exch_Al", xlab="Years after liming", las=1, type="b", pch=1, ylim=c(0.5, 3.5))
+for (i in 2:n) lines(y[,c(1,i+1)], type="b", pch=i, col=i)
+legend("bottomright", legend=paste("TAS", tas), pch=1:n, col=1:n)
+```
+
+The initial and maintenance lime rates are
+
+```{r}
+limer:::.lime_time(exch_ac=3.5, ECEC=7, TAS=tas, rates=TRUE)
+```
+
+Note how the vary depending on TAS. This suggests that once you have reached a very low TAS, maintaining it takes less lime.
+
+Now compare the effect of different levels of exchangeable acidity (2, 3, 4, or 5 meq/100g), with TAS=20 and ECEC=7.
+
+```{r, fig.width=5}
+exch <- 2:5
+n <- length(exch)
+y <- limer:::.lime_time(18, exch_ac=exch, ECEC=7, TAS=20)
+plot(y[,1:2], ylab="Exch_Al", xlab="Years after liming", las=1, type="b", pch=1, ylim=c(1.0, 5))
+for (i in 2:n) lines(y[,c(1,i+1)], type="b", pch=i, col=i)
+legend("topleft", legend=paste("exch_ac", exch), pch=1:n, col=1:n)
+```
+
+Now the maintenance lime rate is the same in all cases. 
+
+```{r}
+limer:::.lime_time(exch_ac=exch, ECEC=7, TAS=20, rates=TRUE)
+```
+
+
+## Implications 
+
+In our paper we have implicitly assumed that the initial amount of liming is equal to the maintenance liming. The motivation for this was that (1) we do not know much about the decay and (2) investments need to be recouped in the first year to make them economically attractive. 
+
+What the above shows is that this is correct if your initial amount is equal to the maintenance amount. 
+
+However, if your initial amount is much larger, things change. Let's consider a situation where the initial amount of lime required is 1000 kg ($100), and maintenance is 200 kg ($20) per year. Assume that the yield benefit is $100 per year. 
+
+If you write off the initial amount wn one year, with an interest rate of 20%, your loss/profits are 
+
+```{r}
+prof <- 100 - c(120, rep(20, 4))
+prof
+sum(prof) / 5
+```
+
+If you write off the initial investment over five years, with an interest rate of 20%, the annual cost of the initial dose would be 
+
+```{r}
+base <- 20 * 1.1^c(1:5)
+base 
+sum(base)
+```
+
+The annualized profit would then be 
+
+```{r}
+prof <- 100 - 20 - base
+prof
+sum(prof) / 5
+```
+
+The two scenarios are not that different. But only looking at the first year (no profit) distorts (a) the amounts of lime needed on an annual basis, and (b) the expected profitability. 
+
+Liming is clearly different from nitrogen fertilizer in that sense. Not accounting for multiple year effects may not be reasonable for computing the profit. 
+
+The main obstacle to adoption of liming could be the initial investment. That has interesting policy implications. It would be of interest to show where a first year low profit or loss could be an important barrier to adoption. Those should be areas where `lime(initial) >> lime(maintenance)` and with a poor  cost/benefit of liming generally (high lime rate required per unit benefit (amount of crop * price)).
+
+## Caveats
+
+You tell me! 
+
+The obvious one is that I base this all on one study. 
+
+The data are for a Hacienda Carimagua, a research station in the Colombian Amazon (lon=-71.343, lat=4.578). The annual rainfall is in the order of 2000 mm. That would suggest that the decay rates may be compariable to the areas with acid soils in humid tropical Sub-Saharan Africa. They should be lower in areas that are less wet. But what if the soil is more sandy?
+
+If this all makes sense, it would be of great interest to get more empirical decay rates. 

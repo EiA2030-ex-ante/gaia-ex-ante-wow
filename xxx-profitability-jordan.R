@@ -2,8 +2,8 @@
 # ------------------------------------------------------------------------------
 
 # directories
-input_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/scripts-ex-ante/input-data/'
-output_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/scripts-ex-ante/output-data/'
+input_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/1-ex-ante-analysis/input-data/'
+output_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/1-ex-ante-analysis/output-data/'
 
 # ------------------------------------------------------------------------------
 
@@ -127,21 +127,104 @@ profit <- function(crop, yield_resp, yf, crop_price, returns_f=c('year1', 'npv',
 # ------------------------------------------------------------------------------
 
 # profitability
-for(r_f in c('year1', 'npv', 'equilibrium')){
+lp <- c(50,75,100)
+ya <- c(1,1.5,2) 
+params <- expand.grid(lime_price=lp, yield_factor=ya)
+for(r_f in c('year1', 'npv')){
   print(r_f)
   for(crop in unique(crops_df$spam)){
     print(crop)
     area_ha <- crop_area[[paste0(crop, '_ha')]]
     c_price <- crop_price[crop_price$crop==crop,]$x
     c_nyrs <- nyears_f(crop, lr_crops, lr_m_crops)
-    if(r_f == 'npv'){                                         
-      crop1 <- profit(returns_f=r_f, crop, yield_resp=resp_hp, yf=1, crop_price=c_price, lime_method=lr_crops, nyrs=c_nyrs, lime_price=100) 
-    } else{
-      crop1 <- profit(returns_f=r_f, crop, yield_resp=resp_hp, yf=1, crop_price=c_price, lime_method=lr_crops, lime_m_method=lr_m_crops, lime_price=100) 
+    for(i in 1:nrow(params)){
+      print(i)
+      p <- params[i,]    
+      if(r_f == 'npv'){                                         
+        crop1 <- profit(returns_f=r_f, crop, yield_resp=resp_hp, yf=p$yield_factor, crop_price=c_price, lime_method=lr_crops, nyrs=c_nyrs, lime_price=p$lime_price) 
+      } else{
+        crop1 <- profit(returns_f=r_f, crop, yield_resp=resp_hp, yf=p$yield_factor, crop_price=c_price, lime_method=lr_crops, lime_m_method=lr_m_crops, lime_price=p$lime_price) 
+      }
+      crop2 <- c(area_ha, crop1)
+      terra::writeRaster(crop2, paste0(input_path, 'profit-layers/', crop, '_', r_f, '_', i, '.tif'), overwrite=T)
     }
-    crop2 <- c(area_ha, crop1)
-    terra::writeRaster(crop2, paste0(input_path, 'economics_f/', crop, '_', r_f, '.tif'), overwrite=T)
-    }
+  }
+}
+
+# ------------------------------------------------------------------------------
+
+#for github
+
+# plot function
+plot_gm <- function(profit, comb, av, lsize){
+  gm <- terra::rast(Sys.glob(paste0(input_path, 'profit-layers/*_', profit, '_', comb, '.tif')))
+  gm <- gm[[grep('*_gm_usha', names(gm))]]
+  
+  if(av == 'weightedmean'){
+    gm <- terra::weighted.mean(gm, w=spam, na.rm=T)
+  } else{
+    gm <- terra::mean(gm, na.rm=T)
+  }
+  names(gm) <- 'gm'
+  pal <- colorRampPalette(c('orangered', "gold", "lightblue", "darkblue"))
+  terra::plot(ssa, mar=c(3.5,3.5,2.5,1), clip=F, col='white', main='', panel.first=grid(col="gray", lty="solid"), pax=list(cex.axis=1.8))
+  terra::plot(spam_cl, col='lightgrey', legend=F, axes=F, add=T)
+  terra::plot(gm, breaks=c(-Inf, 0, 250, 500, Inf), col=pal(4), legend=F, axes=F, add=T)
+  legend(-17.5, -10, bty='y', cex=lsize, box.col="white", title="Crop area weighted\nprofit ($US/ha)", legend=c('No response', '< 0', '0 - 250', '250 - 500', '> 500'), fill=c('lightgrey', pal(4)), horiz=FALSE)
+  terra::plot(ssa, axes=F, add=T)
+  box()
+  }
+
+# region 
+ssa <- terra::vect(paste0(input_path, 'gadm_ssa.gpkg'))
+spam <- terra::rast(paste0(input_path, 'spam_harv_area_processed.tif'))
+spam <- spam[[sort(names(spam))]]
+spam_cl <- sum(spam)
+spam_cl <- terra::ifel(spam_cl > 0, 1, NA)
+
+# plotting
+for(xx in c('weightedmean', 'arithmean')){
+  print(xx)
+  # main plot
+  png(paste0(output_path, "/z1-current-", xx, ".png"), units="in", width=9, height=9.1/2, res=1000)
+  par(mfrow=c(1,2), mar=c(3.5,3.5,2.5,1), xaxs='i', yaxs='i')
+  plot_gm(profit='year1', comb=3, lsize=0.8, av=xx)
+  title('A) First-year profit', cex.main=1.4)
+  plot_gm(profit='npv', comb=3, lsize=0.8, av=xx)
+  title('B) Net Present Value (NPV)', cex.main=1.4)
+  dev.off()
+  # main plot
+  png(paste0(output_path, "/z2-lime-50usdt-", xx, ".png"), units="in", width=9, height=9.1/2, res=1000)
+  par(mfrow=c(1,2), mar=c(3.5,3.5,2.5,1), xaxs='i', yaxs='i')
+  plot_gm(profit='year1', comb=1, lsize=0.8, av=xx)
+  title('A) First-year profit', cex.main=1.4)
+  plot_gm(profit='npv', comb=1, lsize=0.8, av=xx)
+  title('B) Net Present Value (NPV)', cex.main=1.4)
+  dev.off()
+  # main plot
+  png(paste0(output_path, "/z2-lime-75usdt-", xx, ".png"), units="in", width=9, height=9.1/2, res=1000)
+  par(mfrow=c(1,2), mar=c(3.5,3.5,2.5,1), xaxs='i', yaxs='i')
+  plot_gm(profit='year1', comb=2, lsize=0.8, av=xx)
+  title('A) First-year profit', cex.main=1.4)
+  plot_gm(profit='npv', comb=2, lsize=0.8, av=xx)
+  title('B) Net Present Value (NPV)', cex.main=1.4)
+  dev.off()
+  # main plot
+  png(paste0(output_path, "/z3-yield-double-", xx, ".png"), units="in", width=9, height=9.1/2, res=1000)
+  par(mfrow=c(1,2), mar=c(3.5,3.5,2.5,1), xaxs='i', yaxs='i')
+  plot_gm(profit='year1', comb=9, lsize=0.8, av=xx)
+  title('A) First-year profit', cex.main=1.4)
+  plot_gm(profit='npv', comb=9, lsize=0.8, av=xx)
+  title('B) Net Present Value (NPV)', cex.main=1.4)
+  dev.off()
+  # main plot
+  png(paste0(output_path, "/z4-both-price-yield", xx, ".png"), units="in", width=9, height=9.1/2, res=1000)
+  par(mfrow=c(1,2), mar=c(3.5,3.5,2.5,1), xaxs='i', yaxs='i')
+  plot_gm(profit='year1', comb=8, lsize=0.8, av=xx)
+  title('A) First-year profit', cex.main=1.4)
+  plot_gm(profit='npv', comb=8, lsize=0.8, av=xx)
+  title('B) Net Present Value (NPV)', cex.main=1.4)
+  dev.off()
   }
 
 # ------------------------------------------------------------------------------

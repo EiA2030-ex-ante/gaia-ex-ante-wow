@@ -18,7 +18,7 @@ spam <- c('MAIZ', 'SORG', 'BEAN', 'CHIC', 'LENT', 'WHEA', 'BARL', 'ACOF', 'RCOF'
           'SWPO', 'CASS', 'COWP', 'PIGE', 'SOYB', 'GROU', 'SUGC', 'COTT', 'COCO', 'TEAS', 'TOBA')	
 
 # spam
-for(sv in c('harv_area', 'prod', 'yield')){   # val_prod
+for(sv in c('harv_area', 'prod', 'yield')){
   print(sv)
   variable <- lapply(spam, function(crop){geodata::crop_spam(crop, sv, path=input_path)[[1]]})   # africa=T,
   variable <- terra::rast(variable)

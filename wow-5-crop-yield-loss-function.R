@@ -2,8 +2,8 @@
 # ------------------------------------------------------------------------------
 
 # directories
-input_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/scripts-ex-ante/input-data/'
-output_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/scripts-ex-ante/output-data/'
+input_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/1-ex-ante-analysis/input-data/'
+output_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/1-ex-ante-analysis/output-data/'
 
 # ------------------------------------------------------------------------------
 
@@ -57,13 +57,13 @@ for(crop in unique(crops_df$spam)){
 }
 
 # comparison
-crop <- 'MAIZ'
-resp <- 'hp'
-parameter <- 0
-original <- terra::rast(paste0(input_path, '/ecocrop/', resp, '_crop_suitability_', crop, '_', parameter, '.tif'))
-original <- terra::clamp(original, 0.2, 1)
-modified <- terra::rast(paste0(input_path, '/ecocrop_f/', resp, '_crop_suitability_', crop, '_', parameter, '.tif'))
-diff <- original - modified
-diff
+# crop <- 'MAIZ'
+# resp <- 'hp'
+# parameter <- 0
+# original <- terra::rast(paste0(input_path, '/ecocrop/', resp, '_crop_suitability_', crop, '_', parameter, '.tif'))
+# original <- terra::clamp(original, 0.2, 1)
+# modified <- terra::rast(paste0(input_path, '/ecocrop_f/', resp, '_crop_suitability_', crop, '_', parameter, '.tif'))
+# diff <- original - modified
+# diff
 
 # ------------------------------------------------------------------------------

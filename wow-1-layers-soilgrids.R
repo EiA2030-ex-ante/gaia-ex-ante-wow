@@ -2,7 +2,7 @@
 # ------------------------------------------------------------------------------
 
 # directories
-input_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/scripts-ex-ante/input-data/'
+input_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/1-ex-ante-analysis/input-data/'
 
 # ------------------------------------------------------------------------------
 

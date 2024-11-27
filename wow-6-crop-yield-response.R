@@ -2,8 +2,8 @@
 # ------------------------------------------------------------------------------
 
 # directories
-input_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/scripts-ex-ante/input-data/'
-output_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/scripts-ex-ante/output-data/'
+input_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/1-ex-ante-analysis/input-data/'
+output_path <- 'D:/# Jvasco/Working Papers/GAIA Guiding Acid Soil Investments/1-ex-ante-analysis/output-data/'
 
 # ------------------------------------------------------------------------------
 
@@ -18,6 +18,6 @@ x <- lapply(resp, function(response){
   loss_agg <- terra::aggregate(loss, 10, fun='mean', na.rm=T)
   resp_tha <- (crop_yield / loss_agg) - crop_yield 
   terra::writeRaster(resp_tha, paste0(input_path, '/extra_production_', response,'.tif'), overwrite=T)
-})
+  })
 
 # ------------------------------------------------------------------------------
